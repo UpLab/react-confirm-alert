@@ -1,51 +1,29 @@
-import React, { Component } from 'react'
-import PropTypes from 'prop-types'
-import { render, unmountComponentAtNode } from 'react-dom'
+import React, { Component, useState } from 'react'
+import { find } from 'lodash'
+
+let containerDivRef
+let globalState = []
+let rerender
+
+const addToGlobalState = (el) => {
+  document.body.classList.add('react-confirm-alert-body-element')
+  globalState = [...globalState, el]
+  rerender()
+}
+
+const removeFromGlobalState = (id) => {
+  document.body.classList.remove('react-confirm-alert-body-element')
+  globalState = globalState.filter((existingEl) => existingEl.id !== id)
+  rerender()
+}
 
 export default class ReactConfirmAlert extends Component {
-  static propTypes = {
-    title: PropTypes.string,
-    message: PropTypes.string,
-    buttons: PropTypes.array.isRequired,
-    childrenElement: PropTypes.func,
-    customUI: PropTypes.func,
-    closeOnClickOutside: PropTypes.bool,
-    closeOnEscape: PropTypes.bool,
-    willUnmount: PropTypes.func,
-    afterClose: PropTypes.func,
-    onClickOutside: PropTypes.func,
-    onKeypressEscape: PropTypes.func,
-    id: PropTypes.string
-  }
-
-  static defaultProps = {
-    buttons: [
-      {
-        label: 'Cancel',
-        onClick: () => null,
-        className: null
-      },
-      {
-        label: 'Confirm',
-        onClick: () => null,
-        className: null
-      }
-    ],
-    childrenElement: () => null,
-    closeOnClickOutside: true,
-    closeOnEscape: true,
-    willUnmount: () => null,
-    afterClose: () => null,
-    onClickOutside: () => null,
-    onKeypressEscape: () => null
-  }
-
-  handleClickButton = button => {
+  handleClickButton = (button) => {
     if (button.onClick) button.onClick()
     this.close()
   }
 
-  handleClickOverlay = e => {
+  handleClickOverlay = (e) => {
     const { closeOnClickOutside, onClickOutside } = this.props
     const isClickOutside = e.target === this.overlay
 
@@ -57,12 +35,11 @@ export default class ReactConfirmAlert extends Component {
 
   close = () => {
     const { afterClose, id } = this.props
-    removeBodyClass(id)
-    removeElementReconfirm(id)
-    removeSVGBlurReconfirm(afterClose, id)
+    removeFromGlobalState(id)
+    afterClose()
   }
 
-  keyboardClose = event => {
+  keyboardClose = (event) => {
     const { closeOnEscape, onKeypressEscape } = this.props
     const isKeyCodeEscape = event.keyCode === 27
 
@@ -94,95 +71,43 @@ export default class ReactConfirmAlert extends Component {
   }
 
   render () {
-    const { title, message, buttons, childrenElement, customUI } = this.props
-
     return (
       <div
         className='react-confirm-alert-overlay'
-        ref={dom => (this.overlay = dom)}
+        ref={(dom) => (this.overlay = dom)}
         onClick={this.handleClickOverlay}
       >
         <div className='react-confirm-alert'>
-          {customUI ? (
-            this.renderCustomUI()
-          ) : (
-            <div className='react-confirm-alert-body'>
-              {title && <h1>{title}</h1>}
-              {message}
-              {childrenElement()}
-              <div className='react-confirm-alert-button-group'>
-                {buttons.map((button, i) => (
-                  <button key={i} onClick={() => this.handleClickButton(button)} className={button.className}>
-                    {button.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {this.renderCustomUI()}
         </div>
       </div>
     )
   }
 }
 
-// function createSVGBlurReconfirm (id) {
-//   // If has svg ignore to create the svg
-//   const svg = document.getElementById('react-confirm-alert-firm-svg')
-//   if (svg) return
-//   const svgNS = 'http://www.w3.org/2000/svg'
-//   const feGaussianBlur = document.createElementNS(svgNS, 'feGaussianBlur')
-//   feGaussianBlur.setAttribute('stdDeviation', '0.3')
-
-//   const filter = document.createElementNS(svgNS, 'filter')
-//   filter.setAttribute('id', 'gaussian-blur')
-//   filter.appendChild(feGaussianBlur)
-
-//   const svgElem = document.createElementNS(svgNS, 'svg')
-//   svgElem.setAttribute('id', 'react-confirm-alert-firm-svg')
-//   svgElem.setAttribute('class', 'react-confirm-alert-svg')
-//   svgElem.appendChild(filter)
-
-//   document.body.appendChild(svgElem)
-// }
-
-function removeSVGBlurReconfirm (afterClose, id) {
-  // const svg = document.getElementById('react-confirm-alert-firm-svg')
-  // svg.parentNode.removeChild(svg)
-  document.body.children[0].classList.remove(`react-confirm-alert-blur-${id}`)
-  afterClose()
-}
-
-function createElementReconfirm (properties, id) {
-  let divTarget
-  document.body.children[0].classList.add(`react-confirm-alert-blur-${id}`)
-  divTarget = document.createElement('div')
-  divTarget.id = `react-confirm-alert-${id}`
-  document.body.appendChild(divTarget)
-  render(<ReactConfirmAlert {...properties} id={id} />, divTarget)
-}
-
-function removeElementReconfirm (id) {
-  const target = document.getElementById(`react-confirm-alert-${id}`)
-  if (target) {
-    unmountComponentAtNode(target)
-    target.parentNode.removeChild(target)
-  }
-}
-
-function addBodyClass (id) {
-  document.body.classList.add(`react-confirm-alert-body-element-${id}`)
-}
-
-function removeBodyClass (id) {
-  document.body.classList.remove(`react-confirm-alert-body-element-${id}`)
+ReactConfirmAlert.defaultProps = {
+  closeOnClickOutside: true,
+  closeOnEscape: true,
+  willUnmount: () => null,
+  afterClose: () => null,
+  onClickOutside: () => null,
+  onKeypressEscape: () => null
 }
 
 export function confirmAlert (properties) {
-  let r = Math.random().toString(36).substring(7)
-  console.log('random', r)
+  const id = Math.random().toString(36).substring(7)
+  addToGlobalState({ id, component: <ReactConfirmAlert {...properties} id={id} /> })
+}
 
-  const id = r
-  addBodyClass(id)
-  // createSVGBlurReconfirm()
-  createElementReconfirm(properties, id)
+export const ConfirmAlertRenderer = ({ id }) => { const c = find(globalState, { id }); return (c && c.component) || null }
+export const MemoConfirmAlertRenderer = React.memo(ConfirmAlertRenderer)
+export const ConfirmAlertContainer = () => {
+  const [, setState] = useState()
+  rerender = () => setState(Math.random())
+
+  return (
+    <div ref={containerDivRef}>
+      {globalState.map(({ id }) => <ConfirmAlertRenderer id={id} key={id} />)}
+    </div>
+  )
 }
