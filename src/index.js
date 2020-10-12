@@ -95,8 +95,10 @@ ReactConfirmAlert.defaultProps = {
 }
 
 export function confirmAlert (properties) {
-  const id = Math.random().toString(36).substring(7)
-  addToGlobalState({ id, component: <ReactConfirmAlert {...properties} id={id} /> })
+  window.setTimeout(() => {
+    const id = Math.random().toString(36).substring(7)
+    addToGlobalState({ id, component: <ReactConfirmAlert {...properties} id={id} /> })
+  }, 0)
 }
 
 export const ConfirmAlertRenderer = ({ id }) => { const c = find(globalState, { id }); return (c && c.component) || null }
