@@ -1,20 +1,20 @@
-import React, { Component, useState } from 'react'
+import React, { Component, useEffect, useState } from 'react'
 import { find } from 'lodash'
+import Store from './store'
 
-let containerDivRef
-let globalState = []
-let rerender
+const arrayName = 'globalState'
+const rerenderFnName = 'rerender'
 
 const addToGlobalState = (el) => {
   document.body.classList.add('react-confirm-alert-body-element')
-  globalState = [...globalState, el]
-  rerender()
+  Store.setState(arrayName, [...Store.getState(arrayName) || [], el])
+  Store.getState(rerenderFnName)()
 }
 
 const removeFromGlobalState = (id) => {
   document.body.classList.remove('react-confirm-alert-body-element')
-  globalState = globalState.filter((existingEl) => existingEl.id !== id)
-  rerender()
+  Store.setState(arrayName, (Store.getState(arrayName) || []).filter((existingEl) => existingEl.id !== id))
+  Store.getState(rerenderFnName)()
 }
 
 export default class ReactConfirmAlert extends Component {
@@ -101,15 +101,23 @@ export function confirmAlert (properties) {
   }, 0)
 }
 
-export const ConfirmAlertRenderer = ({ id }) => { const c = find(globalState, { id }); return (c && c.component) || null }
+export const ConfirmAlertRenderer = ({ id }) => { const c = find(Store.getState(arrayName) || [], { id }); return (c && c.component) || null }
 export const MemoConfirmAlertRenderer = React.memo(ConfirmAlertRenderer)
 export const ConfirmAlertContainer = () => {
-  const [, setState] = useState()
-  rerender = () => setState(Math.random())
-
+  const [state, setState] = useState(0)
+  useEffect(() => {
+    Store.setState(arrayName, [])
+    return () => {
+      Store.setState(arrayName, undefined)
+      Store.setState(rerenderFnName, undefined)
+    }
+  }, [])
+  useEffect(() => {
+    Store.setState(rerenderFnName, () => setState(prev => prev + 1))
+  })
   return (
-    <div ref={containerDivRef}>
-      {globalState.map(({ id }) => <ConfirmAlertRenderer id={id} key={id} />)}
+    <div id={`react-confirm-alert-${state}`}>
+      {(Store.getState(arrayName) || []).map(({ id }) => <ConfirmAlertRenderer id={id} key={id} />)}
     </div>
   )
 }

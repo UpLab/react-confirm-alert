@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import { confirmAlert } from '../src'
+import { confirmAlert, ConfirmAlertContainer } from '../src'
 import '../src/react-confirm-alert.css'
 
 class App extends React.Component {
@@ -54,6 +54,7 @@ class App extends React.Component {
             </a>
           </div>
         </section>
+        <ConfirmAlertContainer />
       </div>
     )
   }
